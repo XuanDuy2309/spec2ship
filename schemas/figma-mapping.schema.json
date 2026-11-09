@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec2ship.dev/schemas/figma-mapping.schema.json",
+  "title": "Requirement <-> Figma mapping (mappings/figma-mapping.json)",
+  "type": "object",
+  "required": ["schema_version", "mappings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "node_id", "relation", "confidence", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "requirement_id": { "type": "string", "pattern": "^REQ-[A-Z0-9]{2,12}-\\d{3}$" },
+          "node_id": { "type": "string", "pattern": "^I?\\d+:\\d+(;\\d+:\\d+)*$" },
+          "node_name": { "type": "string" },
+          "relation": { "enum": ["screen", "component", "state", "flow", "content"] },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "evidence": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "unmapped_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "reason"],
+        "properties": {
+          "requirement_id": { "type": "string" },
+          "reason": { "enum": ["no_ui", "design_missing", "figma_unavailable", "unclear"] },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "unmapped_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id"],
+        "properties": { "node_id": { "type": "string" }, "note": { "type": "string" } }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirement_id", "node_id", "description"],
+        "properties": {
+          "requirement_id": { "type": "string" },
+          "node_id": { "type": "string" },
+          "description": { "type": "string" },
+          "question_id": { "type": "string" }
+        }
+      }
+    }
+  }
+}

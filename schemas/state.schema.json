@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec2ship.dev/schemas/state.schema.json",
+  "title": "Spec2Ship workflow state (state.json)",
+  "type": "object",
+  "required": ["schema_version", "run_id", "state", "history", "inputs"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "run_id": { "type": "string", "pattern": "^s2s-[0-9]{8}-[0-9]{6}-[a-f0-9]{6}$" },
+    "state": {
+      "enum": ["INIT", "PREFLIGHT", "ANALYSIS", "REQUIREMENT_REVIEW", "PLANNING", "PLAN_REVIEW", "APPROVED", "EXECUTION", "REVIEW", "VERIFICATION", "BLOCKED", "COMPLETED"]
+    },
+    "blocked_from": { "type": ["string", "null"] },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "at"],
+        "properties": {
+          "from": { "type": ["string", "null"] },
+          "to": { "type": "string" },
+          "at": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "inputs": { "type": "object" },
+    "preflight": { "type": ["object", "null"] },
+    "figma_check": { "type": ["object", "null"] },
+    "approval": { "type": ["object", "null"] },
+    "harness": { "type": ["object", "null"] },
+    "retries": { "type": "object" },
+    "blockers": { "type": "array", "items": { "type": "string" } }
+  }
+}

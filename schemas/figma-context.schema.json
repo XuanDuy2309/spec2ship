@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec2ship.dev/schemas/figma-context.schema.json",
+  "title": "Figma context captured through figma-mcp-go (analysis/figma-context.json)",
+  "type": "object",
+  "required": ["schema_version", "url", "status", "nodes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "url": {
+      "type": "object",
+      "required": ["file_key"],
+      "properties": {
+        "url": { "type": "string" },
+        "kind": { "type": "string" },
+        "file_key": { "type": "string" },
+        "branch_key": { "type": ["string", "null"] },
+        "name_slug": { "type": ["string", "null"] },
+        "node_id": { "type": ["string", "null"] }
+      }
+    },
+    "status": { "enum": ["captured", "partial", "unavailable"] },
+    "unavailable_reason": { "type": "string" },
+    "mcp_server": { "type": "string" },
+    "open_file": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "current_page": { "type": "string" },
+        "match": { "enum": ["high", "medium", "low", "unknown", "user_confirmed"] },
+        "match_reason": { "type": "string" }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": { "id": { "type": "string" }, "name": { "type": "string" } }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "type"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^I?\\d+:\\d+(;\\d+:\\d+)*$" },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "page": { "type": "string" },
+          "parent_id": { "type": ["string", "null"] },
+          "texts": { "type": "array", "items": { "type": "string" } },
+          "components": { "type": "array", "items": { "type": "string" } },
+          "states": { "type": "array", "items": { "type": "string" } },
+          "annotations": { "type": "array", "items": { "type": "string" } },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "tools_called": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "description": "Spec2Ship approval gate: blocks Harness execution of unapproved/drifted Spec2Ship plans and records developer approval intent.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill|Write|Edit|MultiEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-hook.sh\" pretool",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-hook.sh\" prompt",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

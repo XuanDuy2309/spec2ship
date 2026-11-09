@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.spec2ship/
+# Claude Code / Harness local session state
+.claude/

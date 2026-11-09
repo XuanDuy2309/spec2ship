@@ -1,0 +1,14 @@
+{
+  "name": "spec2ship",
+  "version": "0.1.0",
+  "description": "Turn BA documents (PDF/DOCX/MD) + Figma designs + an existing repo into an approved, traceable fullstack plan executed by claude-code-harness with evidence-based verification. Preview release.",
+  "author": {
+    "name": "Thaiht",
+    "email": "thaiht@caro.vn",
+    "url": "https://github.com/hthai1523"
+  },
+  "homepage": "https://github.com/hthai1523/spec2ship",
+  "repository": "https://github.com/hthai1523/spec2ship",
+  "license": "MIT",
+  "keywords": ["requirements", "figma", "traceability", "rtm", "planning", "harness", "fullstack", "approval"]
+}

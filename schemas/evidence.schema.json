@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec2ship.dev/schemas/evidence.schema.json",
+  "title": "Verification evidence (verification/verification.json)",
+  "type": "object",
+  "required": ["schema_version", "results"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "recorded_at"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "layer": { "enum": ["static", "unit", "integration", "build", "review", "visual", "other"] },
+          "command": { "type": "string" },
+          "exit_code": { "type": ["integer", "null"] },
+          "status": { "enum": ["PASS", "REVIEWED", "FAIL", "BLOCKED", "NOT_RUN", "NOT_APPLICABLE"] },
+          "summary": { "type": "string" },
+          "log_file": { "type": "string" },
+          "recorded_at": { "type": "string" }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["criterion_id", "status", "method", "recorded_at"],
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": { "type": "string", "pattern": "^AC-[A-Z0-9]{2,12}-\\d{3}-\\d{2}$" },
+          "status": { "enum": ["PASS", "REVIEWED", "FAIL", "BLOCKED", "NOT_RUN", "NOT_APPLICABLE"] },
+          "method": { "enum": ["unit-test", "integration-test", "e2e-test", "manual", "llm-review", "visual", "static"] },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "file": { "type": "string" },
+              "test": { "type": "string" },
+              "command": { "type": "string" },
+              "exit_code": { "type": ["integer", "null"] },
+              "result": { "type": "string" },
+              "log_file": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          },
+          "recorded_at": { "type": "string" }
+        }
+      }
+    }
+  }
+}
