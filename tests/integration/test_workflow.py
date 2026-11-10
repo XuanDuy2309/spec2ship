@@ -1,5 +1,6 @@
 """End-to-end vertical slice through the CLI and the hook handler (no network, no model)."""
 import json
+from pathlib import Path
 import os
 import subprocess
 import sys
@@ -236,7 +237,7 @@ class HookLauncher(unittest.TestCase):
         self.assertEqual(res.stdout.strip(), "")
 
 
-NODE_OK = {"ok": True, "version": "v24.0.0", "detail": "Node v24.0.0, npx found"}
+NODE_OK = {"ok": True, "version": "v24.0.0", "detail": "Node v24.0.0"}
 
 
 class PreflightAndInputs(unittest.TestCase):
@@ -249,8 +250,11 @@ class PreflightAndInputs(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("[FAIL] harness", out)
             self.assertIn("/plugin install claude-code-harness@claude-code-harness-marketplace", out)
-            self.assertIn("[OK  ] figma-mcp-config: bundled with Spec2Ship: npx -y @vkhanhqui/figma-mcp-go@0.1.3", out)
-            self.assertIn("mcp__plugin_spec2ship_figma-mcp-go__", out)
+            self.assertIn("[OK  ] figma-mcp-config: bundled read-only Figma bridge (no download): node", out)
+            self.assertIn("mcp__plugin_spec2ship_figma-bridge__", out)
+            self.assertIn("127.0.0.1:3994", out)
+            self.assertNotIn("npx", out)
+            self.assertNotIn("figma-other-server", out)
             st = json.loads((tp.ws / "state.json").read_text(encoding="utf-8"))
             self.assertEqual(st["state"], "BLOCKED")
         finally:
@@ -259,43 +263,56 @@ class PreflightAndInputs(unittest.TestCase):
     def test_bundled_server_needs_node(self):
         tp = TempProject(with_figma=False)
         try:
-            with mock.patch.object(preflight, "node_runtime", return_value={"ok": False, "detail": "node=missing, npx=missing"}):
+            with mock.patch.object(preflight, "node_runtime", return_value={"ok": False, "detail": "node not found on PATH"}):
                 code, out, _ = run_cli(tp.project, "preflight", "--no-record")
             self.assertEqual(code, 2)
             self.assertIn("[FAIL] node-runtime", out)
-            self.assertIn("Install Node.js 18+", out)
+            self.assertIn("Install Node.js 20+", out)
         finally:
             tp.cleanup()
 
-    def test_without_bundle_falls_back_to_user_config(self):
+    def test_missing_bundle_blocks(self):
         tp = TempProject(with_figma=False)
         try:
             with mock.patch.object(preflight, "bundled_figma_server", return_value=None):
                 code, out, _ = run_cli(tp.project, "preflight", "--no-record")
-                self.assertEqual(code, 2)
-                self.assertIn("[FAIL] figma-mcp-config", out)
-                (tp.tmp / ".mcp.json").write_text(json.dumps({"mcpServers": {"figma": {"command": "npx", "args": ["-y", "@vkhanhqui/figma-mcp-go@latest"]}}}), encoding="utf-8")
-                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
-            self.assertEqual(code, 0, out)
-            self.assertIn("[WARN] figma-mcp-config", out)  # ancestor .mcp.json found, unpinned
+            self.assertEqual(code, 2)
+            self.assertIn("[FAIL] figma-mcp-config", out)
+            self.assertIn("/plugin update spec2ship@spec2ship-marketplace", out)
         finally:
             tp.cleanup()
 
-    def test_user_duplicate_is_reported_as_compatible(self):
-        tp = TempProject()  # writes a project .mcp.json with figma-mcp-go
+    def test_figma_plugin_import_path_is_printed(self):
+        tp = TempProject(with_figma=False)
+        try:
+            built = {**preflight.bundled_figma_server(), "figma_plugin_built": True}
+            with mock.patch.object(preflight, "node_runtime", return_value=NODE_OK), \
+                    mock.patch.object(preflight, "bundled_figma_server", return_value=built):
+                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
+            self.assertEqual(code, 0, out)
+            manifest = str(REPO / "vendor" / "figma-bridge" / "plugin" / "manifest.json")
+            self.assertIn(f"[OK  ] figma-plugin: Figma plugin to import: {manifest}", out)
+            self.assertIn("Spec2Ship Figma Bridge (read-only)", out)
+        finally:
+            tp.cleanup()
+
+    def test_user_figma_mcp_go_is_flagged(self):
+        tp = TempProject()  # writes a project .mcp.json with the user's own figma-mcp-go
         try:
             with mock.patch.object(preflight, "node_runtime", return_value=NODE_OK):
                 code, out, _ = run_cli(tp.project, "preflight", "--no-record")
-            self.assertEqual(code, 0, out)
-            self.assertIn("[OK  ] figma-mcp-duplicate", out)
-            self.assertIn("leader on 127.0.0.1:1994", out)
+            self.assertIn("[WARN] figma-other-server", out)
+            self.assertIn("DMCA", out)
+            self.assertIn("claude mcp remove figma-mcp-go", out)
         finally:
             tp.cleanup()
 
-    def test_bundled_config_is_pinned(self):
+    def test_bundled_config_runs_vendored_server_without_npx(self):
         b = preflight.bundled_figma_server()
-        self.assertTrue(b["pinned"])
-        self.assertEqual(b["package_version"], "0.1.3")
+        self.assertTrue(b["server_exists"], b)
+        self.assertFalse(b["uses_npx"])
+        self.assertEqual(b["port"], 3994)
+        self.assertTrue(b["server_path"].endswith(str(Path("vendor") / "figma-bridge" / "dist" / "server.mjs")))
 
     def test_invalid_inputs_fail_clearly(self):
         tp = TempProject()
