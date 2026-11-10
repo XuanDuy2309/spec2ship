@@ -5,6 +5,21 @@ versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-10
+
+### Added
+- figma-mcp-go MCP server bundled in the plugin (`.mcp.json`, pinned `@vkhanhqui/figma-mcp-go@0.1.3`, MIT): users no
+  longer run `claude mcp add`. Tools are exposed as `mcp__plugin_spec2ship_figma-mcp-go__*` (verified live).
+- Preflight `node-runtime` check (Node.js 18+ and npx, required by the bundled server) and `figma-mcp-duplicate`
+  notice when the user also configured figma-mcp-go (compatible: leader/follower on 127.0.0.1:1994, verified).
+
+### Changed
+- Skills, commands and the `figma-analyst` agent use the bundled server's tool names.
+- Still manual (cannot be bundled): importing and running the figma-mcp-go plugin inside Figma Desktop.
+
+### Removed
+- `.mcp.json.example` (superseded by the bundled `.mcp.json`).
+
 ## [0.1.0] - 2026-11-10
 
 Initial vertical slice (preview). Not yet verified end-to-end: design capture with Figma Desktop running, and

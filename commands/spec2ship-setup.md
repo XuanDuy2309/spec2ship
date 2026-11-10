@@ -9,9 +9,10 @@ argument-hint: (no arguments)
 
 1. Run `S2S preflight` from the project root (results are saved to the run only when a run exists). Show every
    line, grouped OK / WARN / FAIL, with the suggested fix.
-2. Check the Figma bridge yourself: call the figma-mcp-go `get_metadata` tool (e.g. `mcp__figma-mcp-go__get_metadata`).
-   - Tool not available → the MCP server is not configured or not approved; show the `claude mcp add` fix from
-     preflight and tell the developer to restart Claude Code / approve the project MCP server.
+2. Check the Figma bridge yourself: call `mcp__plugin_spec2ship_figma-mcp-go__get_metadata` (Spec2Ship bundles the
+   figma-mcp-go server; Claude Code starts it with the plugin — the developer does not need `claude mcp add`).
+   - Tool not available → the bundled server failed to start: usually Node.js 18+/npx missing (see `node-runtime`
+     in preflight) or no network for the first `npx` download. Check `/mcp`, fix, restart Claude Code.
    - Error `plugin not connected` → Figma Desktop is closed or the figma-mcp-go plugin is not running. Steps:
      download `plugin.zip` from the figma-mcp-go releases page, Figma Desktop → Plugins → Development →
      Import plugin from manifest → select `manifest.json`, then run the plugin inside the design file.
@@ -21,5 +22,7 @@ argument-hint: (no arguments)
    developer to run, for example:
    - `/plugin marketplace add Chachamaru127/claude-code-harness` and
      `/plugin install claude-code-harness@claude-code-harness-marketplace`
-   - `claude mcp add figma-mcp-go -s project -- npx -y @vkhanhqui/figma-mcp-go@<tested-version>`
+   - Node.js 18+ from https://nodejs.org if `node-runtime` failed (needed by the bundled figma-mcp-go server)
+   If preflight reports `figma-mcp-duplicate`, the developer's own figma-mcp-go entry can stay (instances share one
+   leader on 127.0.0.1:1994) or be removed; do not remove it yourself.
 4. Summarize: READY / READY WITH WARNINGS / BLOCKED, and the next command (`/spec2ship <figma-url> --ba <path>`).

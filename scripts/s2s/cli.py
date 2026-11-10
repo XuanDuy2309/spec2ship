@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import artifacts, ba_parser, docs_render, figma, harness_adapter, preflight, repo_analyzer, state
+from . import __version__, artifacts, ba_parser, docs_render, figma, harness_adapter, preflight, repo_analyzer, state
 from .common import (
     WORKSPACE_DIRS, Spec2ShipError, canonical_json, now_iso, read_json, sha256_file, sha256_text,
     workspace_path, write_json, write_text,
@@ -108,7 +108,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     inputs = {"figma": url_info, "ba": bas, "instructions": args.instructions or "", "project_root": str(root)}
     st = state.create(ws, inputs)
     write_json(ws / "run.json", {"run_id": st["run_id"], "created_at": now_iso(), "inputs": inputs,
-                                 "workspace": str(ws), "spec2ship_version": "0.1.0"})
+                                 "workspace": str(ws), "spec2ship_version": __version__})
     gi = root / ".gitignore"
     rel_ws = os.path.relpath(ws, root).replace("\\", "/")
     ignored = gi.exists() and any(l.strip().rstrip("/") in (rel_ws, "/" + rel_ws) for l in gi.read_text(encoding="utf-8", errors="replace").splitlines())

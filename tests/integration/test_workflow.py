@@ -5,8 +5,10 @@ import subprocess
 import sys
 import unittest
 
+from unittest import mock
+
 from tests.helpers import FIGMA_URL, REPO, TempProject, run_cli
-from s2s import repo_analyzer
+from s2s import preflight, repo_analyzer
 
 
 def hook(mode, payload, env):
@@ -234,40 +236,66 @@ class HookLauncher(unittest.TestCase):
         self.assertEqual(res.stdout.strip(), "")
 
 
+NODE_OK = {"ok": True, "version": "v24.0.0", "detail": "Node v24.0.0, npx found"}
+
+
 class PreflightAndInputs(unittest.TestCase):
-    def test_missing_harness_and_figma_blocks(self):
+    def test_missing_harness_blocks_bundled_figma_ok(self):
         tp = TempProject(with_figma=False, harness_version=None)
         try:
             run_cli(tp.project, "init", "--figma", FIGMA_URL, "--ba", "docs/BA/customer-management.md")
-            code, out, _ = run_cli(tp.project, "preflight")
+            with mock.patch.object(preflight, "node_runtime", return_value=NODE_OK):
+                code, out, _ = run_cli(tp.project, "preflight")
             self.assertEqual(code, 2)
             self.assertIn("[FAIL] harness", out)
             self.assertIn("/plugin install claude-code-harness@claude-code-harness-marketplace", out)
-            self.assertIn("[FAIL] figma-mcp-config", out)
+            self.assertIn("[OK  ] figma-mcp-config: bundled with Spec2Ship: npx -y @vkhanhqui/figma-mcp-go@0.1.3", out)
+            self.assertIn("mcp__plugin_spec2ship_figma-mcp-go__", out)
             st = json.loads((tp.ws / "state.json").read_text(encoding="utf-8"))
             self.assertEqual(st["state"], "BLOCKED")
         finally:
             tp.cleanup()
 
-    def test_figma_config_in_ancestor_dir(self):
+    def test_bundled_server_needs_node(self):
         tp = TempProject(with_figma=False)
         try:
-            (tp.tmp / ".mcp.json").write_text(json.dumps({"mcpServers": {"figma": {"command": "npx", "args": ["-y", "@vkhanhqui/figma-mcp-go@0.4.2"]}}}), encoding="utf-8")
-            code, out, _ = run_cli(tp.project, "preflight", "--no-record")
-            self.assertEqual(code, 0, out)
-            self.assertIn("[OK  ] figma-mcp-config", out)
+            with mock.patch.object(preflight, "node_runtime", return_value={"ok": False, "detail": "node=missing, npx=missing"}):
+                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
+            self.assertEqual(code, 2)
+            self.assertIn("[FAIL] node-runtime", out)
+            self.assertIn("Install Node.js 18+", out)
         finally:
             tp.cleanup()
 
-    def test_unpinned_figma_warns(self):
-        tp = TempProject()
+    def test_without_bundle_falls_back_to_user_config(self):
+        tp = TempProject(with_figma=False)
         try:
-            (tp.project / ".mcp.json").write_text(json.dumps({"mcpServers": {"figma-mcp-go": {"command": "npx", "args": ["-y", "@vkhanhqui/figma-mcp-go@latest"]}}}), encoding="utf-8")
-            code, out, _ = run_cli(tp.project, "preflight", "--no-record")
-            self.assertEqual(code, 0)
-            self.assertIn("[WARN] figma-mcp-config", out)
+            with mock.patch.object(preflight, "bundled_figma_server", return_value=None):
+                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
+                self.assertEqual(code, 2)
+                self.assertIn("[FAIL] figma-mcp-config", out)
+                (tp.tmp / ".mcp.json").write_text(json.dumps({"mcpServers": {"figma": {"command": "npx", "args": ["-y", "@vkhanhqui/figma-mcp-go@latest"]}}}), encoding="utf-8")
+                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
+            self.assertEqual(code, 0, out)
+            self.assertIn("[WARN] figma-mcp-config", out)  # ancestor .mcp.json found, unpinned
         finally:
             tp.cleanup()
+
+    def test_user_duplicate_is_reported_as_compatible(self):
+        tp = TempProject()  # writes a project .mcp.json with figma-mcp-go
+        try:
+            with mock.patch.object(preflight, "node_runtime", return_value=NODE_OK):
+                code, out, _ = run_cli(tp.project, "preflight", "--no-record")
+            self.assertEqual(code, 0, out)
+            self.assertIn("[OK  ] figma-mcp-duplicate", out)
+            self.assertIn("leader on 127.0.0.1:1994", out)
+        finally:
+            tp.cleanup()
+
+    def test_bundled_config_is_pinned(self):
+        b = preflight.bundled_figma_server()
+        self.assertTrue(b["pinned"])
+        self.assertEqual(b["package_version"], "0.1.3")
 
     def test_invalid_inputs_fail_clearly(self):
         tp = TempProject()

@@ -10,7 +10,7 @@ task plan. **Nothing is implemented until a developer approves the exact plan.**
 claude-code-harness; Spec2Ship then records review/test evidence and writes a delivery report that keeps
 *implemented*, *verified*, *blocked* and *deferred* apart.
 
-> Status: **0.1.0 preview — initial vertical slice.** Live Figma capture and Harness execution of a handed-off plan
+> Status: **0.2.0 preview — initial vertical slice.** Live Figma capture and Harness execution of a handed-off plan
 > are not yet verified end-to-end. See [What is tested](#what-is-tested) and [Limitations](#limitations).
 
 ## Prerequisites
@@ -20,7 +20,8 @@ claude-code-harness; Spec2Ship then records review/test evidence and writes a de
 | Claude Code | plugin host | 2.1.319 |
 | Python ≥ 3.9 on PATH (`python3` or `python`) | local helper scripts (stdlib only) | 3.14.5 |
 | [claude-code-harness](https://github.com/Chachamaru127/claude-code-harness) plugin | task ledger, Work, Review | 4.12.11 (≥ 4.0 accepted) |
-| figma-mcp-go MCP server + its Figma Desktop plugin | read the design | `@vkhanhqui/figma-mcp-go` (version not yet pinned by tests; see [docs/INTEGRATION.md](docs/INTEGRATION.md)) |
+| Node.js ≥ 18 with `npx` | runs the **bundled** figma-mcp-go MCP server | Node 24.16.0 |
+| figma-mcp-go plugin in Figma Desktop (one-time import) | bridge between Figma Desktop and the MCP server | figma-mcp-go 0.1.3 |
 | `pdftotext` (poppler) or `pip install pypdf` — optional | reliable PDF text extraction | poppler `pdftotext` (Git for Windows build) |
 | `bash` | hook launcher | Git Bash on Windows |
 
@@ -36,14 +37,18 @@ claude-code-harness; Spec2Ship then records review/test evidence and writes a de
 
 Local checkout: `/plugin marketplace add /path/to/spec2ship`, or `claude --plugin-dir /path/to/spec2ship` for a single session.
 
-Figma (pin the version you tested instead of `@latest`):
+**Figma: no MCP setup needed.** Spec2Ship bundles the figma-mcp-go MCP server (`.mcp.json`, pinned to
+`@vkhanhqui/figma-mcp-go@0.1.3`, MIT); Claude Code starts it automatically when the plugin is enabled. Its tools
+appear as `mcp__plugin_spec2ship_figma-mcp-go__*`. The first start downloads the package via `npx` (network needed
+once).
 
-```bash
-claude mcp add figma-mcp-go -s project -- npx -y @vkhanhqui/figma-mcp-go@<version>
-```
+One step cannot be bundled, because it lives inside Figma Desktop: download `plugin.zip` from
+[figma-mcp-go releases](https://github.com/vkhanhqui/figma-mcp-go/releases), then in **Figma Desktop**
+*Plugins → Development → Import plugin from manifest…* → `manifest.json` (once per machine), and run the plugin in
+your design file whenever you use Spec2Ship.
 
-Then in **Figma Desktop**: download `plugin.zip` from the figma-mcp-go releases, *Plugins → Development → Import
-plugin from manifest…* → `manifest.json`, open your design file and run the plugin. See `.mcp.json.example`.
+Already configured figma-mcp-go yourself? It can stay: instances elect one leader on `127.0.0.1:1994` and the
+others act as followers, so they do not conflict (verified with 0.1.3). You may remove your own entry.
 
 Run `/spec2ship-setup` to check everything.
 
@@ -131,7 +136,8 @@ blocked after the approved scope was edited. See [docs/INTEGRATION.md](docs/INTE
 | Symptom | Fix |
 |---|---|
 | `[FAIL] harness` | install/enable claude-code-harness, restart Claude Code |
-| `[FAIL] figma-mcp-config` | `claude mcp add figma-mcp-go ...` (above), approve the project MCP server |
+| `[FAIL] node-runtime` | install Node.js 18+ (bundled figma-mcp-go is started with `npx`), restart Claude Code |
+| figma tools missing in `/mcp` | check Node/npx and network for the first `npx` download; restart Claude Code |
 | `plugin not connected` | open Figma Desktop, open the file, run the figma-mcp-go plugin |
 | `OCR_REQUIRED` | export a text PDF/DOCX/Markdown or OCR the PDF locally |
 | `section '...' not found` / `possible hallucination` | the requirement's citation does not match the parsed BA; fix the citation |

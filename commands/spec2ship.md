@@ -33,7 +33,7 @@ Windows if `python3` is unavailable). Run it from the project root with the Bash
    developer instructions. Run `S2S init --figma "<url>" --ba "<path>" [--instructions "<text>"]`. If it fails
    (invalid URL, missing/unsupported file), report the error and stop.
 3. **Preflight.** Run `S2S preflight`. If the result is BLOCKED, show the FAIL items with their fixes and stop.
-4. **Figma bridge check.** Call the figma-mcp-go `get_metadata` tool (e.g. `mcp__figma-mcp-go__get_metadata`).
+4. **Figma bridge check.** Call the figma-mcp-go `get_metadata` tool (e.g. `mcp__plugin_spec2ship_figma-mcp-go__get_metadata`).
    - Error `plugin not connected` (or the tool is missing): run
      `S2S figma-check --error "<message>"`, tell the developer to open the file in Figma Desktop and run the
      figma-mcp-go plugin, then ask whether to retry or continue without design context.

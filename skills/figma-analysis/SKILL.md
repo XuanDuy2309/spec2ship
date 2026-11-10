@@ -8,7 +8,7 @@ description: Capture only the relevant Figma screens/components through the figm
 figma-mcp-go talks to Figma Desktop through its companion plugin — no REST API, no token. It reads **the file that is
 currently open** in Figma Desktop; tools take no file key. Node IDs use colon format (`12:345`); the CLI already
 converted the URL's `node-id=12-345`. Tool names below are as exposed by the server (prefixed in Claude Code, e.g.
-`mcp__figma-mcp-go__get_metadata`).
+`mcp__plugin_spec2ship_figma-mcp-go__get_metadata`).
 
 Read-only tools used: `get_metadata`, `get_pages`, `get_node`, `get_nodes_info`, `get_design_context`
 (`depth`, `detail`: minimal|compact|full, `dedupe_components`), `search_nodes` (`query`, `nodeId`, `types`, `limit`),

@@ -42,12 +42,14 @@ accepted; versions other than `TESTED_VERSIONS` produce a warning.
 
 Blueprint referenced `RamenSV/figma-mcp-go`. Its README (read 2026-11-09) instructs `npx -y @vkhanhqui/figma-mcp-go`
 and links the Figma plugin `plugin.zip` from `vkhanhqui/figma-mcp-go` releases. The npm page (HTTP 403) and the
-vkhanhqui GitHub repo (HTTP 451) could not be fetched, so **latest version and license are unverified**, and the
-fork relationship is not stated in the README.
+vkhanhqui GitHub repo (HTTP 451) could not be fetched in a browser-style request; the npm registry was then
+queried directly with `npm view` (2026-11-10).
 
 | Item | Status | Detail |
 |---|---|---|
-| Package / config | Documented | `.mcp.json`: `{"mcpServers": {"figma-mcp-go": {"command": "npx", "args": ["-y", "@vkhanhqui/figma-mcp-go"]}}}` |
+| Package metadata | Verified (`npm view`) | `@vkhanhqui/figma-mcp-go` latest **0.1.3**, license **MIT**, `engines.node >=18.0.0`, repo `github.com/vkhanhqui/figma-mcp-go`, bin `bin/run.js` (Node launcher for prebuilt Go binaries: darwin/linux/windows × amd64/arm64) |
+| **Bundled in Spec2Ship** (0.2.0) | Verified (live) | plugin-root `.mcp.json` → `npx -y @vkhanhqui/figma-mcp-go@0.1.3`; in a `claude -p --plugin-dir` session Claude Code started it and exposed tools as **`mcp__plugin_spec2ship_figma-mcp-go__<tool>`**; `get_metadata` returned `plugin not connected` (Figma Desktop plugin not running) |
+| Multiple instances | Verified (live probe of the 0.1.3 Windows binary) | first instance becomes LEADER listening on `127.0.0.1:1994`; later instances log `[node] became FOLLOWER` and ping the leader (`→ 200 healthy=true`). A user's own figma-mcp-go config and the bundled one therefore coexist |
 | Local config on the test machine | Verified | `claude mcp get figma-mcp-go` → "Project config (shared via .mcp.json)", stdio, `npx -y @vkhanhqui/figma-mcp-go@latest`, defined in `~/.mcp.json` — i.e. Claude Code applies ancestor `.mcp.json` files; preflight now walks ancestors and warns that it is unpinned |
 | No Figma token / REST API | Documented | README: "doesn't use the API at all" |
 | Bridge | Documented + Verified failure mode | Figma Desktop → Plugins → Development → Import plugin from manifest → run plugin in the file. With the plugin not running, `get_metadata` returned the error **`plugin not connected`** (observed) |

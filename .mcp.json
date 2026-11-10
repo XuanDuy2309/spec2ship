@@ -2,7 +2,7 @@
   "mcpServers": {
     "figma-mcp-go": {
       "command": "npx",
-      "args": ["-y", "@vkhanhqui/figma-mcp-go@REPLACE_WITH_TESTED_VERSION"]
+      "args": ["-y", "@vkhanhqui/figma-mcp-go@0.1.3"]
     }
   }
 }

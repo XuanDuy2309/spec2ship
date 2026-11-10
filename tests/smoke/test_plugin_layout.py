@@ -64,6 +64,18 @@ class PluginLayout(unittest.TestCase):
         self.assertTrue((REPO / "scripts" / "run-hook.sh").exists())
         self.assertTrue((REPO / "scripts" / "hook.py").exists())
 
+    def test_bundled_figma_server_pinned_and_referenced(self):
+        servers = json.loads((REPO / ".mcp.json").read_text(encoding="utf-8"))["mcpServers"]
+        self.assertEqual(list(servers), ["figma-mcp-go"])
+        args = servers["figma-mcp-go"]["args"]
+        pkg = next(a for a in args if a.startswith("@vkhanhqui/figma-mcp-go@"))
+        self.assertRegex(pkg, r"@\d+\.\d+\.\d+$", "bundled server must be pinned to an exact version")
+        prefix = "mcp__plugin_spec2ship_figma-mcp-go__"
+        fm, _ = frontmatter(REPO / "agents" / "figma-analyst.md")
+        self.assertTrue(all(t.strip().startswith(prefix) for t in fm["tools"].split(",") if "mcp__" in t))
+        for p in list((REPO / "skills").rglob("*.md")) + list((REPO / "commands").glob("*.md")) + list((REPO / "agents").glob("*.md")):
+            self.assertNotIn("mcp__figma-mcp-go__", p.read_text(encoding="utf-8"), f"stale tool prefix in {p}")
+
     def test_schemas_are_valid_json_and_referenced(self):
         for p in (REPO / "schemas").glob("*.schema.json"):
             data = json.loads(p.read_text(encoding="utf-8"))

@@ -17,7 +17,8 @@ We aim to acknowledge within 5 business days. Supported version: the latest rele
 | Secrets | Reading `.env`/keys during repo analysis | Analyzer skips `.env*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa*`; skills forbid reading secrets |
 | User work | Overwriting files / Plans.md / spec edits | Plans.md merged inside markers with a backup; handoff refuses to overwrite started tasks; developer edits of `spec.md` preserved; `.gitignore` never edited; root `spec.md` never written |
 | Production | Deploys, destructive git, production DB | Not performed by Spec2Ship; verification skill forbids them; risky tasks (destructive migration, breaking API, cross-repo) flagged for explicit review; Harness guardrails remain in force |
-| Supply chain | Unpinned `npx -y ...@latest` MCP server | Preflight warns when figma-mcp-go is unpinned; docs require pinning a tested version |
+| Supply chain | Bundled MCP server fetched from npm at runtime (`npx`) | Pinned to an exact version (`@vkhanhqui/figma-mcp-go@0.1.3`, MIT) in `.mcp.json`; a test fails if it becomes unpinned; npm still serves the bytes, so review upstream releases before bumping the pin. Preflight warns when a user-configured figma-mcp-go is unpinned |
+| Design integrity | Bundled server exposes Figma write tools | Spec2Ship skills forbid write tools and the `figma-analyst` agent allowlist contains only read tools; Claude Code permission prompts still apply |
 
 ## Limits (be honest)
 

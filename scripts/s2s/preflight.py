@@ -11,10 +11,40 @@ from pathlib import Path
 from typing import Any
 
 from . import harness_adapter
+from .common import PLUGIN_ROOT
 from .harness_adapter import claude_config_dir
 
 FIGMA_PACKAGE = "@vkhanhqui/figma-mcp-go"
 FIGMA_MARKER = "figma-mcp-go"
+# Tool-name prefix of the server bundled in this plugin's .mcp.json (Claude Code: mcp__plugin_<plugin>_<server>__<tool>)
+BUNDLED_TOOL_PREFIX = "mcp__plugin_spec2ship_figma-mcp-go__"
+NODE_MIN_MAJOR = 18  # figma-mcp-go package.json engines.node >= 18
+
+
+def bundled_figma_server() -> dict[str, Any] | None:
+    """The figma-mcp-go server shipped in the plugin's own .mcp.json (started by Claude Code with the plugin)."""
+    cfg = _servers_from(_load(PLUGIN_ROOT / ".mcp.json")).get(FIGMA_MARKER)
+    if not cfg:
+        return None
+    blob = " ".join([str(cfg.get("command", "")), *map(str, cfg.get("args", []) or [])])
+    m = re.search(r"figma-mcp-go@([\w.\-]+)", blob)
+    version = m.group(1) if m else None
+    return {"name": FIGMA_MARKER, "source": f"{PLUGIN_ROOT / '.mcp.json'} (bundled with Spec2Ship)", "command": blob,
+            "package_version": version, "pinned": bool(version and version != "latest"),
+            "tool_prefix": BUNDLED_TOOL_PREFIX}
+
+
+def node_runtime() -> dict[str, Any]:
+    node, npx = shutil.which("node"), shutil.which("npx")
+    if not node or not npx:
+        return {"ok": False, "detail": f"node={'found' if node else 'missing'}, npx={'found' if npx else 'missing'}"}
+    try:
+        out = subprocess.run([node, "--version"], capture_output=True, text=True, timeout=20).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return {"ok": False, "detail": "node --version failed"}
+    m = re.match(r"v(\d+)", out)
+    major = int(m.group(1)) if m else 0
+    return {"ok": major >= NODE_MIN_MAJOR, "version": out, "detail": f"Node {out}, npx found"}
 
 
 def _servers_from(data: dict[str, Any]) -> dict[str, Any]:
@@ -119,20 +149,35 @@ def run(project_root: Path) -> dict[str, Any]:
     except Exception as e:  # Spec2ShipError
         add("harness-plans-path", "fail", str(e), "Fix plansDirectory in .claude-code-harness.config.yaml", True)
 
-    figma = find_figma_mcp(project_root)
-    if not figma:
+    bundled = bundled_figma_server()
+    user_figma = find_figma_mcp(project_root)
+    figma = ([bundled] if bundled else []) + user_figma
+    node = node_runtime()
+    if bundled:
+        add("figma-mcp-config", "ok" if bundled["pinned"] else "warn",
+            f"bundled with Spec2Ship: {bundled['command']} (tools {bundled['tool_prefix']}*)",
+            None if bundled["pinned"] else "Bundled server should be pinned to a tested version.")
+        if user_figma:
+            add("figma-mcp-duplicate", "ok",
+                f"You also configured '{user_figma[0]['name']}' ({user_figma[0]['source']}). Both can run: figma-mcp-go "
+                "elects one leader on 127.0.0.1:1994 and other instances act as followers. You may remove your own entry.")
+        if node["ok"]:
+            add("node-runtime", "ok", node["detail"])
+        else:
+            add("node-runtime", "fail", f"{node['detail']} — the bundled figma-mcp-go server is started with npx.",
+                f"Install Node.js {NODE_MIN_MAJOR}+ (https://nodejs.org) and restart Claude Code.", blocking=True)
+    elif not user_figma:
         add("figma-mcp-config", "fail", "No MCP server running figma-mcp-go is configured for this project.",
-            f"Add it (pin a version you tested): `claude mcp add figma-mcp-go -s project -- npx -y {FIGMA_PACKAGE}@<version>` "
-            "then import the figma-mcp-go plugin in Figma Desktop (Plugins → Development → Import plugin from manifest) and run it.",
+            f"Reinstall Spec2Ship (it bundles the server) or add it: `claude mcp add figma-mcp-go -s project -- npx -y {FIGMA_PACKAGE}@<version>`.",
             blocking=True)
     else:
-        f0 = figma[0]
-        st = "ok" if f0["pinned"] else "warn"
-        add("figma-mcp-config", st, f"'{f0['name']}' from {f0['source']}: {f0['command']}",
+        f0 = user_figma[0]
+        add("figma-mcp-config", "ok" if f0["pinned"] else "warn", f"'{f0['name']}' from {f0['source']}: {f0['command']}",
             None if f0["pinned"] else f"Pin the package version (e.g. {FIGMA_PACKAGE}@<tested-version>) instead of an unpinned/@latest npx install.")
     add("figma-bridge", "pending",
-        "Bridge readiness can only be checked by calling the MCP tool `get_metadata` from Claude Code "
-        "(error 'plugin not connected' means the Figma Desktop plugin is not running).")
+        "Still required once per machine: in Figma Desktop import the figma-mcp-go plugin (Plugins → Development → "
+        "Import plugin from manifest, plugin.zip from github.com/vkhanhqui/figma-mcp-go/releases) and run it in the "
+        "design file. Check by calling `get_metadata`; 'plugin not connected' means it is not running.")
 
     g = _git_state(project_root)
     if g.get("repository"):
