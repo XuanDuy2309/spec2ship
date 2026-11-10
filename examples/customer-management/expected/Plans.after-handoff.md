@@ -13,7 +13,7 @@
 
 User note: keep this line.
 
-<!-- spec2ship:begin run=s2s-20261110-140248-7d9ed6 plan=ed0e4ba43dac -->
+<!-- spec2ship:begin run=s2s-20261110-141130-badcfd plan=557bcfaaa547 -->
 ## Phase 2: Customer data and API (Spec2Ship)
 
 Purpose: Backend, API and database support for search and create
@@ -36,4 +36,4 @@ Spec: `.spec2ship/planning/spec.md` (approved Spec2Ship sub-spec; requirement ID
 | 3.2 | Create customer form per Figma 12:400 \| shows API errors [REQ-CUS-002] [feature:a11y] | form test shows 'Phone number already registered' on 409 | 2.3 | cc:完了 [1234567] |
 | 3.3 | Customer detail screen per Figma 12:450 [REQ-CUS-003] | detail renders name, phone, email, created date in a component test | 2.2 | cc:完了 [1234567] |
 
-<!-- spec2ship:end run=s2s-20261110-140248-7d9ed6 -->
+<!-- spec2ship:end run=s2s-20261110-141130-badcfd -->

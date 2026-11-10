@@ -116,13 +116,13 @@ def main() -> int:
     plans = (project / "Plans.md").read_text(encoding="utf-8")
     print(f"  user note kept: {'User note: keep this line.' in plans}")
     edited = plans.replace("Customer detail screen", "Customer detail and export screen")
-    (project / "Plans.md").write_text(edited, encoding="utf-8")
+    (project / "Plans.md").write_text(edited, encoding="utf-8", newline="\n")
     blocked = hook("prompt", {"cwd": str(project), "prompt": "/harness-work all"})
     print(f"  scope edited after approval -> /harness-work {blocked['decision'] if blocked else 'allowed'}")
     # Stand-in for Harness execution: Harness marks tasks done in Plans.md (a status-only change).
     done = plans.replace("| cc:TODO |", "| cc:完了 [1234567] |").replace(
         "| 1.2  | Logout | test passes | 1.1 | cc:完了 [1234567] |", "| 1.2  | Logout | test passes | 1.1 | cc:TODO |")
-    (project / "Plans.md").write_text(done, encoding="utf-8")
+    (project / "Plans.md").write_text(done, encoding="utf-8", newline="\n")
     allowed = hook("prompt", {"cwd": str(project), "prompt": "/harness-work all"})
     print(f"  Harness marks the tasks cc:完了 (status only) -> guard {'allows' if allowed is None else 'blocks'} further work")
 
