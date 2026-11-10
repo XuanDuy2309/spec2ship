@@ -12,6 +12,9 @@ claude-code-harness; Spec2Ship then records review/test evidence and writes a de
 
 > Status: **0.2.0 preview — initial vertical slice.** Live Figma capture and Harness execution of a handed-off plan
 > are not yet verified end-to-end. See [What is tested](#what-is-tested) and [Limitations](#limitations).
+>
+> **New in 0.2.0:** the figma-mcp-go MCP server is bundled — no `claude mcp add` needed. See [Figma setup](#figma-setup).
+> Vietnamese quick start: [Hướng dẫn nhanh](#hướng-dẫn-nhanh-tiếng-việt).
 
 ## Prerequisites
 
@@ -35,22 +38,36 @@ claude-code-harness; Spec2Ship then records review/test evidence and writes a de
 /plugin install spec2ship@spec2ship-marketplace
 ```
 
-Local checkout: `/plugin marketplace add /path/to/spec2ship`, or `claude --plugin-dir /path/to/spec2ship` for a single session.
+Restart Claude Code after installing. Local checkout: `/plugin marketplace add /path/to/spec2ship`, or
+`claude --plugin-dir /path/to/spec2ship` for a single session.
 
-**Figma: no MCP setup needed.** Spec2Ship bundles the figma-mcp-go MCP server (`.mcp.json`, pinned to
-`@vkhanhqui/figma-mcp-go@0.1.3`, MIT); Claude Code starts it automatically when the plugin is enabled. Its tools
-appear as `mcp__plugin_spec2ship_figma-mcp-go__*`. The first start downloads the package via `npx` (network needed
-once).
+### Update
 
-One step cannot be bundled, because it lives inside Figma Desktop: download `plugin.zip` from
-[figma-mcp-go releases](https://github.com/vkhanhqui/figma-mcp-go/releases), then in **Figma Desktop**
-*Plugins → Development → Import plugin from manifest…* → `manifest.json` (once per machine), and run the plugin in
-your design file whenever you use Spec2Ship.
+```text
+/plugin marketplace update spec2ship-marketplace
+/plugin update spec2ship@spec2ship-marketplace
+```
 
-Already configured figma-mcp-go yourself? It can stay: instances elect one leader on `127.0.0.1:1994` and the
-others act as followers, so they do not conflict (verified with 0.1.3). You may remove your own entry.
+Restart Claude Code to apply. Release notes: [CHANGELOG](CHANGELOG.md).
 
-Run `/spec2ship-setup` to check everything.
+### Figma setup
+
+**No MCP configuration needed.** Spec2Ship bundles the figma-mcp-go MCP server (plugin `.mcp.json`, pinned to
+`@vkhanhqui/figma-mcp-go@0.1.3`, MIT). Claude Code starts it automatically when the plugin is enabled; its tools
+appear as `mcp__plugin_spec2ship_figma-mcp-go__*` (check with `/mcp`). The first start downloads the package via
+`npx`, so Node.js 18+ and network access are needed once.
+
+One step cannot be bundled because it lives inside Figma Desktop:
+
+1. Download `plugin.zip` from [figma-mcp-go releases](https://github.com/vkhanhqui/figma-mcp-go/releases) and unzip it.
+2. Figma Desktop → *Plugins → Development → Import plugin from manifest…* → select `manifest.json` (once per machine).
+3. Each time you use Spec2Ship: open the design file and run the figma-mcp-go plugin.
+
+Already configured figma-mcp-go yourself (e.g. in `~/.mcp.json`)? It can stay: instances elect one leader on
+`127.0.0.1:1994` and the others act as followers, so they do not conflict (verified with 0.1.3). You may remove
+your own entry.
+
+Run `/spec2ship:spec2ship-setup` to check everything.
 
 ## Usage
 
@@ -115,15 +132,28 @@ Spec2Ship does not edit `.gitignore`: add `.spec2ship/` to keep intermediates ou
 no model calls): parsers (EN/VI fixtures, scanned PDF, built-in PDF fallback), Figma URL handling, state machine,
 schema + cross-reference validation (hallucinated citations, orphan tasks, cycles, coverage), Harness adapter
 (render/renumber/merge/drift/detection), the full CLI vertical slice with the hook gate, repository analysis, and
-plugin layout (64 tests). `claude plugin validate .` passes. Verified live in real Claude Code 2.1.319 sessions: clean
-marketplace install; developer-typed `/spec2ship:spec2ship-approve <hash>` approving a plan through the hook;
-handoff into a Plans.md alongside the installed Harness 4.12.11; and `/claude-code-harness:harness-work` being
-blocked after the approved scope was edited. See [docs/INTEGRATION.md](docs/INTEGRATION.md).
+plugin layout, bundled MCP config (67 tests). `claude plugin validate .` passes.
+
+Verified live in real Claude Code 2.1.319 sessions:
+- install from GitHub (`/plugin marketplace add hthai1523/spec2ship`) into a clean config; the test suite passes on
+  the installed copy;
+- the bundled figma-mcp-go server starts with the plugin and exposes `mcp__plugin_spec2ship_figma-mcp-go__*`
+  (`get_metadata` → `plugin not connected` while Figma Desktop's plugin is not running);
+- two figma-mcp-go instances coexist (leader/follower on `127.0.0.1:1994`);
+- developer-typed `/spec2ship:spec2ship-approve <hash>` approves a plan through the hook;
+- handoff into a Plans.md alongside the installed Harness 4.12.11, and `/claude-code-harness:harness-work` blocked
+  after the approved scope was edited.
+
+See [docs/INTEGRATION.md](docs/INTEGRATION.md).
 
 ## Limitations
 
 - The live Figma path was verified only up to the bridge check (`plugin not connected`); end-to-end design capture
   with Figma Desktop running has not been tested yet.
+- The bundled server is fetched from npm by `npx` on first start (pinned version, but still a runtime download);
+  offline machines need the package in the npm cache.
+- The bundled figma-mcp-go server also exposes Figma write tools; Spec2Ship never calls them, but they are visible
+  to Claude in the session (normal permission prompts apply).
 - Harness execution itself (`/harness-work` on a handed-off plan) has not been run end-to-end in a real session;
   the Plans.md format was verified against Harness 4.12.11 sources.
 - Requirement extraction, mapping and planning quality depend on the model; the CLI validates structure and
@@ -144,6 +174,30 @@ blocked after the approved scope was edited. See [docs/INTEGRATION.md](docs/INTE
 | `Plan hash mismatch` | the plan changed after review; run `/spec2ship-plan` and approve the new hash |
 | `No developer approval intent` | type `/spec2ship:spec2ship-approve <hash>` yourself (hooks must be enabled) |
 | Harness Work blocked by Spec2Ship | approved scope in Plans.md changed; restore from `.spec2ship/execution/Plans.md.bak-*` or re-plan |
+
+## Hướng dẫn nhanh (Tiếng Việt)
+
+1. **Cài đặt** (trong Claude Code):
+   ```text
+   /plugin marketplace add Chachamaru127/claude-code-harness
+   /plugin install claude-code-harness@claude-code-harness-marketplace
+   /plugin marketplace add hthai1523/spec2ship
+   /plugin install spec2ship@spec2ship-marketplace
+   ```
+   Khởi động lại Claude Code. Máy cần Python 3.9+, Node.js 18+ và bash (Windows: Git Bash).
+2. **Figma:** không cần cấu hình MCP, vì server figma-mcp-go đã được đóng gói sẵn trong plugin. Chỉ cần nhập plugin
+   figma-mcp-go vào Figma Desktop một lần (*Plugins → Development → Import plugin from manifest…*, dùng `manifest.json`
+   trong `plugin.zip` từ [releases](https://github.com/vkhanhqui/figma-mcp-go/releases)), rồi chạy plugin đó trong file
+   thiết kế mỗi lần dùng.
+3. **Kiểm tra:** `/spec2ship:spec2ship-setup`.
+4. **Chạy:** `/spec2ship <figma-url> --ba docs/BA/tai-lieu.docx`. Tài liệu BA có thể ở dạng PDF, DOCX hoặc Markdown,
+   viết bằng tiếng Việt hoặc tiếng Anh. Các file kết quả mặc định viết bằng tiếng Anh, còn trích dẫn giữ nguyên ngôn
+   ngữ gốc.
+5. **Duyệt kế hoạch:** đọc `spec.md`, `Plans.md` và RTM, rồi **tự gõ** `/spec2ship:spec2ship-approve <mã-hash>`.
+   Claude không thể duyệt thay anh/chị.
+6. **Thực thi và kiểm chứng:** `/spec2ship-work` (giao việc cho Harness), sau đó `/spec2ship-review` và
+   `/spec2ship-verify`. Báo cáo cuối nằm ở `.spec2ship/reports/report.md`.
+7. **Cập nhật plugin:** `/plugin marketplace update spec2ship-marketplace`, rồi `/plugin update spec2ship@spec2ship-marketplace`.
 
 ## Documentation
 
