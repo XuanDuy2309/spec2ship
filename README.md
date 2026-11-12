@@ -61,7 +61,7 @@ the Figma manifest path to import.
 
 ```text
 /plugin marketplace add Chachamaru127/claude-code-harness
-/plugin install claude-code-harness@claude-code-harness-marketplace
+/plugin install harness@claude-code-harness-marketplace
 
 /plugin marketplace add hthai1523/spec2ship        # this repository (it is its own marketplace)
 /plugin install spec2ship@spec2ship-marketplace
